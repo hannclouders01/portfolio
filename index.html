@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vhan Dev — Minecraft Server Developer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --black:#050508;--dark:#0c0c12;--panel:#111118;--border:#1e1e2e;
+  --green:#00ff41;--cyan:#00d4ff;--pink:#ff0077;--yellow:#ffcc00;
+  --text:#b0b0c8;--textdim:#555570;--white:#e0e0f0;
+  --font-pixel:'Press Start 2P',monospace;
+  --font-mono:'Share Tech Mono',monospace;
+  --font-orb:'Orbitron',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--black);color:var(--text);font-family:var(--font-mono);font-size:14px;line-height:1.6;overflow-x:hidden;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.18) 2px,rgba(0,0,0,.18) 4px);pointer-events:none;z-index:9999;}
+
+/* LANG MODAL */
+#lang-overlay{position:fixed;inset:0;background:rgba(5,5,8,.97);display:flex;align-items:center;justify-content:center;z-index:9000;transition:opacity .4s;}
+.lang-box{border:1px solid var(--green);background:var(--dark);padding:40px 56px;text-align:center;position:relative;box-shadow:0 0 60px rgba(0,255,65,.12),inset 0 0 40px rgba(0,255,65,.04);}
+.lang-box::before,.lang-box::after{content:'';position:absolute;width:12px;height:12px;border-color:var(--cyan);border-style:solid;}
+.lang-box::before{top:-1px;left:-1px;border-width:2px 0 0 2px;}
+.lang-box::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0;}
+.lang-title{font-family:var(--font-pixel);font-size:9px;color:var(--green);letter-spacing:3px;margin-bottom:8px;}
+.lang-sub{font-size:11px;color:var(--textdim);margin-bottom:32px;letter-spacing:1px;}
+.lang-options{display:flex;gap:16px;justify-content:center;margin-bottom:28px;}
+.lang-btn{background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:12px;padding:12px 24px;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.lang-btn:hover,.lang-btn.selected{border-color:var(--green);color:var(--green);background:rgba(0,255,65,.06);box-shadow:0 0 16px rgba(0,255,65,.2);}
+.lang-btn .flag{display:block;font-size:20px;margin-bottom:6px;}
+.confirm-btn{background:transparent;border:1px solid var(--green);color:var(--green);font-family:var(--font-pixel);font-size:8px;padding:12px 32px;cursor:pointer;letter-spacing:2px;transition:all .25s;}
+.confirm-btn:hover{background:rgba(0,255,65,.12);box-shadow:0 0 24px rgba(0,255,65,.3);}
+.lang-version{margin-top:20px;font-size:10px;color:var(--textdim);letter-spacing:1px;}
+
+/* BOOT */
+#boot-screen{position:fixed;inset:0;background:var(--black);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:8000;opacity:1;transition:opacity .7s;}
+.boot-logo{font-family:var(--font-pixel);font-size:clamp(14px,3vw,26px);color:var(--green);letter-spacing:4px;text-shadow:0 0 20px var(--green),0 0 60px rgba(0,255,65,.4);margin-bottom:48px;animation:flicker 3s infinite;}
+.boot-lines{width:min(520px,90vw);font-size:11px;color:var(--green);letter-spacing:.5px;min-height:200px;}
+.boot-line{opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;}
+.boot-line.show{opacity:1;transform:none;}
+.boot-bar-wrap{width:min(520px,90vw);margin-top:32px;font-size:10px;color:var(--textdim);}
+.boot-bar-label{display:flex;justify-content:space-between;margin-bottom:8px;color:var(--green);font-family:var(--font-pixel);font-size:7px;letter-spacing:2px;}
+.boot-bar-track{height:3px;background:var(--border);position:relative;overflow:hidden;}
+.boot-bar-fill{height:100%;background:var(--green);width:0%;transition:width .08s linear;box-shadow:0 0 10px var(--green);}
+
+.blink{animation:blink 1s step-end infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+@keyframes flicker{0%,95%,100%{opacity:1;}96%{opacity:.8;}97%{opacity:1;}98%{opacity:.6;}99%{opacity:1;}}
+
+.glitch{position:relative;}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;}
+.glitch::before{color:var(--cyan);clip-path:polygon(0 0,100% 0,100% 40%,0 40%);animation:glitchT 4s infinite;}
+.glitch::after{color:var(--pink);clip-path:polygon(0 60%,100% 60%,100% 100%,0 100%);animation:glitchB 4s infinite;}
+@keyframes glitchT{0%,90%,100%{transform:none;opacity:0;}91%{transform:translateX(-3px);opacity:.7;}93%{transform:translateX(2px);opacity:.7;}95%{transform:none;opacity:0;}}
+@keyframes glitchB{0%,88%,100%{transform:none;opacity:0;}89%{transform:translateX(3px);opacity:.7;}92%{transform:translateX(-2px);opacity:.6;}94%{transform:none;opacity:0;}}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;height:52px;background:rgba(5,5,8,.92);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;z-index:500;backdrop-filter:blur(6px);}
+.nav-logo{font-family:var(--font-pixel);font-size:10px;color:var(--green);letter-spacing:3px;text-shadow:0 0 12px rgba(0,255,65,.5);}
+.nav-logo span{color:var(--cyan);}
+.nav-links{display:flex;gap:28px;list-style:none;}
+.nav-links a{color:var(--textdim);text-decoration:none;font-size:11px;letter-spacing:2px;text-transform:uppercase;transition:color .2s;position:relative;}
+.nav-links a::after{content:'';position:absolute;bottom:-2px;left:0;width:0;height:1px;background:var(--green);transition:width .2s;}
+.nav-links a:hover{color:var(--green);}
+.nav-links a:hover::after{width:100%;}
+.nav-status{font-size:10px;color:var(--green);display:flex;align-items:center;gap:8px;}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* HERO */
+#hero{min-height:100vh;padding:100px 32px 60px;display:flex;align-items:center;max-width:1100px;margin:0 auto;gap:60px;}
+.hero-left{flex:1;}
+.hero-eyebrow{font-size:10px;color:var(--cyan);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.hero-eyebrow::before{content:'//';color:var(--textdim);}
+.hero-name{font-family:var(--font-orb);font-size:clamp(32px,6vw,72px);font-weight:900;line-height:1.1;color:var(--white);letter-spacing:-1px;margin-bottom:12px;}
+.hero-name .accent{color:var(--green);}
+.hero-title{font-family:var(--font-pixel);font-size:clamp(7px,1.4vw,10px);color:var(--cyan);letter-spacing:3px;margin-bottom:24px;}
+.hero-desc{color:var(--textdim);max-width:480px;font-size:13px;line-height:1.8;margin-bottom:40px;border-left:2px solid var(--border);padding-left:16px;}
+.hero-desc em{color:var(--text);font-style:normal;}
+.hero-ctas{display:flex;gap:16px;flex-wrap:wrap;}
+.btn-primary{background:var(--green);color:var(--black);font-family:var(--font-pixel);font-size:8px;padding:14px 28px;letter-spacing:2px;border:none;cursor:pointer;text-decoration:none;display:inline-block;transition:all .2s;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);}
+.btn-primary:hover{background:var(--cyan);box-shadow:0 0 30px rgba(0,212,255,.4);}
+.btn-outline{background:transparent;color:var(--text);font-family:var(--font-pixel);font-size:8px;padding:13px 28px;border:1px solid var(--border);cursor:pointer;text-decoration:none;display:inline-block;letter-spacing:2px;transition:all .2s;}
+.btn-outline:hover{border-color:var(--cyan);color:var(--cyan);}
+.hero-right{flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.avatar-wrap{position:relative;width:220px;height:220px;}
+.avatar-frame{position:absolute;inset:0;border:1px solid var(--green);box-shadow:0 0 30px rgba(0,255,65,.15),inset 0 0 30px rgba(0,255,65,.05);}
+.avatar-frame::before,.avatar-frame::after{content:'';position:absolute;width:20px;height:20px;}
+.avatar-frame::before{top:-2px;left:-2px;border-top:2px solid var(--cyan);border-left:2px solid var(--cyan);}
+.avatar-frame::after{bottom:-2px;right:-2px;border-bottom:2px solid var(--pink);border-right:2px solid var(--pink);}
+.avatar-inner{position:absolute;inset:12px;background:linear-gradient(135deg,var(--panel),var(--dark));display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;overflow:hidden;}
+.avatar-icon{font-size:64px;filter:grayscale(1) brightness(1.5);}
+.avatar-tag{font-family:var(--font-pixel);font-size:6px;color:var(--green);letter-spacing:2px;padding:4px 8px;border:1px solid rgba(0,255,65,.3);background:rgba(0,255,65,.06);}
+.avatar-badge{position:absolute;bottom:-12px;right:-12px;background:var(--panel);border:1px solid var(--green);padding:8px 14px;font-size:9px;color:var(--green);letter-spacing:1px;}
+.avatar-scan{position:absolute;width:100%;height:3px;background:linear-gradient(90deg,transparent,rgba(0,255,65,.6),transparent);top:0;animation:scan 3s linear infinite;}
+@keyframes scan{0%{top:0;}100%{top:100%;}}
+
+/* TICKER */
+.ticker{background:var(--panel);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 0;overflow:hidden;white-space:nowrap;}
+.ticker-inner{display:inline-block;animation:ticker 30s linear infinite;}
+.ticker-inner span{font-size:10px;letter-spacing:2px;margin:0 40px;color:var(--textdim);}
+.ticker-inner span.hi{color:var(--green);}
+@keyframes ticker{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+/* SECTIONS */
+.section{padding:80px 32px;max-width:1100px;margin:0 auto;}
+.section-header{margin-bottom:48px;}
+.section-eyebrow{font-size:9px;color:var(--cyan);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.section-eyebrow::before{content:'> ';color:var(--green);}
+.section-title{font-family:var(--font-orb);font-size:clamp(22px,3.5vw,40px);font-weight:700;color:var(--white);letter-spacing:-0.5px;}
+.section-line{width:60px;height:2px;background:linear-gradient(90deg,var(--green),transparent);margin-top:12px;}
+
+/* ABOUT */
+#about{background:var(--dark);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:80px 0;}
+.about-inner{max-width:1100px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;}
+.about-text p{color:var(--textdim);font-size:13px;line-height:1.9;margin-bottom:16px;}
+.about-text p strong{color:var(--green);}
+.about-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.stat-card{background:var(--panel);border:1px solid var(--border);padding:20px;position:relative;overflow:hidden;transition:border-color .2s;}
+.stat-card:hover{border-color:var(--green);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),var(--cyan));transform:scaleX(0);transform-origin:left;transition:transform .3s;}
+.stat-card:hover::before{transform:scaleX(1);}
+.stat-num{font-family:var(--font-orb);font-size:32px;font-weight:900;color:var(--green);line-height:1;margin-bottom:6px;}
+.stat-label{font-size:10px;color:var(--textdim);letter-spacing:1px;}
+
+/* SKILLS */
+.skills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;}
+.skill-card{background:var(--panel);border:1px solid var(--border);padding:24px;transition:all .25s;position:relative;overflow:hidden;}
+.skill-card:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,212,255,.1);}
+.skill-card-header{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.skill-icon{font-size:28px;}
+.skill-name{font-family:var(--font-orb);font-size:13px;font-weight:700;color:var(--white);letter-spacing:1px;}
+.skill-items{display:flex;flex-wrap:wrap;gap:8px;}
+.skill-tag{background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);color:var(--cyan);font-size:10px;padding:4px 10px;letter-spacing:1px;}
+.skill-tag.green{background:rgba(0,255,65,.06);border-color:rgba(0,255,65,.2);color:var(--green);}
+.skill-tag.pink{background:rgba(255,0,119,.06);border-color:rgba(255,0,119,.2);color:var(--pink);}
+.skill-tag.yellow{background:rgba(255,204,0,.06);border-color:rgba(255,204,0,.2);color:var(--yellow);}
+
+/* PLUGIN LIST */
+.plugin-section{padding:80px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.plugin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;max-width:1100px;margin:0 auto;padding:0 32px;}
+.plugin-item{background:var(--panel);border:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text);letter-spacing:.5px;transition:all .2s;cursor:default;}
+.plugin-item:hover{border-color:var(--green);color:var(--green);}
+.plugin-item .pi{color:var(--green);font-size:12px;flex-shrink:0;}
+.plugin-item.premium{border-color:rgba(255,204,0,.2);}
+.plugin-item.premium .pi{color:var(--yellow);}
+.plugin-item.premium:hover{border-color:var(--yellow);color:var(--yellow);}
+.plugin-item.custom{border-color:rgba(255,0,119,.2);}
+.plugin-item.custom .pi{color:var(--pink);}
+.plugin-item.custom:hover{border-color:var(--pink);color:var(--pink);}
+
+/* PROJECTS */
+.projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;}
+.proj-card{background:var(--panel);border:1px solid var(--border);overflow:hidden;transition:all .25s;cursor:pointer;}
+.proj-card:hover{border-color:var(--green);transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,255,65,.1);}
+.proj-thumb{height:160px;background:var(--dark);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border-bottom:1px solid var(--border);}
+.proj-thumb-pattern{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:24px 24px;opacity:.5;}
+.proj-thumb-icon{font-size:48px;z-index:1;filter:drop-shadow(0 0 12px rgba(0,255,65,.4));}
+.proj-lang{position:absolute;top:12px;right:12px;background:rgba(0,255,65,.1);border:1px solid rgba(0,255,65,.3);color:var(--green);font-size:9px;letter-spacing:1px;padding:3px 8px;}
+.proj-body{padding:20px;}
+.proj-title{font-family:var(--font-orb);font-size:14px;font-weight:700;color:var(--white);letter-spacing:.5px;margin-bottom:8px;}
+.proj-desc{color:var(--textdim);font-size:12px;line-height:1.7;margin-bottom:16px;}
+.proj-footer{display:flex;justify-content:space-between;align-items:center;}
+.proj-tags{display:flex;gap:6px;flex-wrap:wrap;}
+.proj-tag{font-size:9px;color:var(--textdim);background:rgba(255,255,255,.04);border:1px solid var(--border);padding:2px 7px;letter-spacing:1px;}
+
+/* TERMINAL */
+.terminal{background:var(--dark);border:1px solid var(--border);overflow:hidden;}
+.terminal-bar{background:var(--panel);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:8px;}
+.terminal-dot{width:10px;height:10px;border-radius:50%;}
+.td-r{background:#ff5f57;}.td-y{background:#ffbd2e;}.td-g{background:#28c840;}
+.terminal-title{flex:1;text-align:center;font-size:10px;color:var(--textdim);letter-spacing:2px;}
+.terminal-body{padding:20px 24px;font-size:12px;line-height:2;color:var(--textdim);}
+.terminal-body .cmd{color:var(--green);}
+.terminal-body .out{color:var(--text);}
+.terminal-body .ok{color:var(--green);}
+.terminal-body .hi{color:var(--cyan);}
+.terminal-body .warn{color:var(--yellow);}
+
+/* CONTACT */
+#contact{background:var(--dark);padding:80px 0;border-top:1px solid var(--border);}
+.contact-inner{max-width:1100px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;}
+.contact-links{display:flex;flex-direction:column;gap:12px;margin-top:8px;}
+.contact-link{display:flex;align-items:center;gap:14px;padding:16px;background:var(--panel);border:1px solid var(--border);text-decoration:none;color:var(--text);font-size:12px;letter-spacing:1px;transition:all .2s;position:relative;overflow:hidden;}
+.contact-link::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--green);transform:scaleY(0);transition:transform .2s;}
+.contact-link:hover::before{transform:scaleY(1);}
+.contact-link:hover{border-color:var(--green);color:var(--white);padding-left:20px;}
+.contact-icon{font-size:20px;}
+.contact-note{color:var(--textdim);font-size:11px;margin-top:20px;line-height:1.8;border:1px solid var(--border);padding:16px;background:rgba(0,255,65,.03);}
+.contact-note strong{color:var(--green);}
+
+/* FOOTER */
+footer{background:var(--dark);border-top:1px solid var(--border);padding:24px 32px;display:flex;align-items:center;justify-content:space-between;}
+.footer-brand{font-family:var(--font-pixel);font-size:8px;color:var(--textdim);letter-spacing:2px;}
+.footer-brand span{color:var(--green);}
+.footer-copy{font-size:10px;color:var(--textdim);}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .5s,transform .5s;}
+.reveal.visible{opacity:1;transform:none;}
+
+/* MOBILE */
+@media(max-width:768px){
+  nav{padding:0 16px;}.nav-links{display:none;}
+  #hero{flex-direction:column-reverse;padding:80px 16px 40px;gap:32px;text-align:center;}
+  .hero-desc{max-width:none;border-left:none;padding-left:0;}
+  .hero-ctas{justify-content:center;}
+  .hero-right{order:-1;}
+  .about-inner,.contact-inner{grid-template-columns:1fr;}
+  .section{padding:60px 16px;}
+  #about,#contact,.plugin-section{padding:60px 0;}
+  .about-inner,.contact-inner,.plugin-grid{padding:0 16px;}
+  footer{flex-direction:column;gap:8px;text-align:center;padding:20px 16px;}
+  .plugin-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- LANG MODAL -->
+<div id="lang-overlay">
+  <div class="lang-box">
+    <div class="lang-title">SELECT LANGUAGE</div>
+    <div class="lang-sub">Pilih bahasa tampilan</div>
+    <div class="lang-options">
+      <button class="lang-btn" onclick="selectLang(this,'en')">
+        <span class="flag">🇬🇧</span>English
+      </button>
+      <button class="lang-btn selected" onclick="selectLang(this,'id')">
+        <span class="flag">🇮🇩</span>Bahasa Indonesia
+      </button>
+    </div>
+    <button class="confirm-btn" onclick="confirmLang()">▶ CONFIRM</button>
+    <div class="lang-version">v3.0 · vhan.dev</div>
+  </div>
+</div>
+
+<!-- BOOT -->
+<div id="boot-screen">
+  <div class="boot-logo glitch" data-text="VHAN SYSTEM">VHAN SYSTEM</div>
+  <div class="boot-lines" id="boot-lines"></div>
+  <div class="boot-bar-wrap">
+    <div class="boot-bar-label"><span id="boot-label">LOADING SYSTEM...</span><span id="boot-pct">0%</span></div>
+    <div class="boot-bar-track"><div class="boot-bar-fill" id="boot-bar"></div></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">[<span>VHAN</span>_DEV]</div>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#plugins">Plugins</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="nav-status"><div class="status-dot"></div>ONLINE</div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-left reveal">
+    <div class="hero-eyebrow">Minecraft Server Developer</div>
+    <h1 class="hero-name">
+      <span class="glitch" data-text="VHAN">VHAN</span><br>
+      <span class="accent">DEV</span>
+    </h1>
+    <div class="hero-title">PLUGIN SETUP · CUSTOM CONFIG · SERVER BUILD<span class="blink">_</span></div>
+    <p class="hero-desc" id="hero-desc">
+      Spesialis setup server Minecraft <em>Kill SMP, Survival, dan RPG</em>.
+      Berpengalaman konfigurasi plugin premium, custom model, dungeon, dan sistem rank tingkat lanjut.
+    </p>
+    <div class="hero-ctas">
+      <a href="#plugins" class="btn-primary" id="btn-work">LIHAT PLUGIN</a>
+      <a href="#contact" class="btn-outline" id="btn-contact">HUBUNGI</a>
+    </div>
+  </div>
+  <div class="hero-right reveal">
+    <div class="avatar-wrap">
+      <div class="avatar-frame">
+        <div class="avatar-scan"></div>
+        <div class="avatar-inner">
+          <div class="avatar-icon">⚔️</div>
+          <div class="avatar-tag">VHAN DEV</div>
+        </div>
+      </div>
+      <div class="avatar-badge">KILL SMP</div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <span class="hi">✦ GEYSER + FLOODGATE</span><span>BEDROCK & JAVA</span>
+    <span class="hi">✦ CUSTOM DUNGEON</span><span>MYTHICDUNGEONS</span>
+    <span class="hi">✦ CUSTOM MODEL RANK</span><span>SOLO LEVELING RANK PACK</span>
+    <span class="hi">✦ ECONOMY SYSTEM</span><span>ECONOMYSHOPGUI · JOBS · VAULT</span>
+    <span class="hi">✦ PREMIUM PLUGINS</span><span>LUCKPERMS · CMI · BATTLEPASS</span>
+    <span class="hi">✦ GEYSER + FLOODGATE</span><span>BEDROCK & JAVA</span>
+    <span class="hi">✦ CUSTOM DUNGEON</span><span>MYTHICDUNGEONS</span>
+    <span class="hi">✦ CUSTOM MODEL RANK</span><span>SOLO LEVELING RANK PACK</span>
+    <span class="hi">✦ ECONOMY SYSTEM</span><span>ECONOMYSHOPGUI · JOBS · VAULT</span>
+    <span class="hi">✦ PREMIUM PLUGINS</span><span>LUCKPERMS · CMI · BATTLEPASS</span>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<div id="about">
+  <div class="about-inner">
+    <div class="reveal">
+      <div class="section-header">
+        <div class="section-eyebrow">About Me</div>
+        <h2 class="section-title">Siapa <span style="color:var(--green)">Vhan Dev?</span></h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="about-text" id="about-text">
+        <p>Halo! Saya <strong>Vhan Dev</strong>, seorang developer spesialis setup dan konfigurasi <strong>server Minecraft</strong> — dari Kill SMP, Survival RPG, hingga server dengan sistem custom yang kompleks.</p>
+        <p>Saya berpengalaman dalam instalasi dan konfigurasi <strong>60+ plugin premium</strong>, membuat custom dungeon dengan MythicDungeons, sistem rank visual dengan custom model, senjata legendary, dan sistem ekonomi lengkap.</p>
+        <p>Server saya support <strong>Bedrock + Java</strong> menggunakan Geyser & Floodgate, sehingga pemain dari platform manapun bisa bergabung tanpa hambatan.</p>
+      </div>
+      <div class="terminal" style="margin-top:32px;">
+        <div class="terminal-bar">
+          <div class="terminal-dot td-r"></div><div class="terminal-dot td-y"></div><div class="terminal-dot td-g"></div>
+          <span class="terminal-title">bash — vhan@kill-smp:~</span>
+        </div>
+        <div class="terminal-body">
+          <div><span class="cmd">$ whoami</span></div>
+          <div><span class="out">vhan_dev — minecraft server specialist</span></div>
+          <div><span class="cmd">$ cat server-info.txt</span></div>
+          <div><span class="ok">✓ Java + Bedrock (Geyser)</span></div>
+          <div><span class="ok">✓ 60+ Plugins Installed</span></div>
+          <div><span class="ok">✓ Custom Dungeon & Rank System</span></div>
+          <div><span class="warn">⚠ Kill SMP — PvP Enabled</span></div>
+          <div><span class="cmd">$ status<span class="blink">_</span></span></div>
+          <div><span class="hi"> AVAILABLE FOR HIRE</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="reveal" style="padding-top:88px;">
+      <div class="about-stats">
+        <div class="stat-card"><div class="stat-num">60+</div><div class="stat-label">PLUGIN INSTALLED</div></div>
+        <div class="stat-card"><div class="stat-num">3+</div><div class="stat-label">TAHUN EXPERIENCE</div></div>
+        <div class="stat-card"><div class="stat-num">100%</div><div class="stat-label">BEDROCK SUPPORT</div></div>
+        <div class="stat-card"><div class="stat-num">∞</div><div class="stat-label">CUSTOM CONFIG</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SKILLS -->
+<section id="skills" class="section">
+  <div class="section-header reveal">
+    <div class="section-eyebrow">Tech Stack</div>
+    <h2 class="section-title">Keahlian <span style="color:var(--cyan)">Utama</span></h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="skills-grid">
+    <div class="skill-card reveal">
+      <div class="skill-card-header"><div class="skill-icon">🌉</div><div class="skill-name">BEDROCK BRIDGE</div></div>
+      <div class="skill-items">
+        <span class="skill-tag green">Geyser-Spigot</span>
+        <span class="skill-tag green">Floodgate</span>
+        <span class="skill-tag green">geyser_resources</span>
+        <span class="skill-tag">ViaVersion</span>
+        <span class="skill-tag">ViaBackwards</span>
+        <span class="skill-tag">ViaRewind</span>
+      </div>
+    </div>
+    <div class="skill-card reveal">
+      <div class="skill-card-header"><div class="skill-icon">💰</div><div class="skill-name">ECONOMY SYSTEM</div></div>
+      <div class="skill-items">
+        <span class="skill-tag yellow">EconomyShopGUI</span>
+        <span class="skill-tag yellow">QuickShop-Hikari</span>
+        <span class="skill-tag yellow">AuctionHouse</span>
+        <span class="skill-tag yellow">BankPlus</span>
+        <span class="skill-tag yellow">Jobs</span>
+        <span class="skill-tag yellow">PlayerCurrency</span>
+        <span class="skill-tag yellow">Vault</span>
+      </div>
+    </div>
+    <div class="skill-card reveal">
+      <div class="skill-card-header"><div class="skill-icon">⚔️</div><div class="skill-name">COMBAT & PvP</div></div>
+      <div class="skill-items">
+        <span class="skill-tag pink">PvPManager</span>
+        <span class="skill-tag pink">BountyHunters</span>
+        <span class="skill-tag pink">Vulcan</span>
+        <span class="skill-tag pink">AuraSkills</span>
+        <span class="skill-tag pink">LevelledMobs</span>
+        <span class="skill-tag pink">MythicDungeons</span>
+        <span class="skill-tag pink">AdvancedEnchantments</span>
+        <span class="skill-tag pink">EcoEnchants</span>
+      </div>
+    </div>
+    <div class="skill-card reveal">
+      <div class="skill-card-header"><div class="skill-icon">🎨</div><div class="skill-name">CUSTOM CONTENT</div></div>
+      <div class="skill-items">
+        <span class="skill-tag pink">Custom Generator</span>
+        <span class="skill-tag pink">Custom Model Rank</span>
+        <span class="skill-tag pink">Senjata Legendary</span>
+        <span class="skill-tag pink">Custom Item</span>
+        <span class="skill-tag pink">Solo Leveling Pack</span>
+        <span class="skill-tag pink">Vegas (Custom)</span>
+        <span class="skill-tag pink">Ouranos</span>
+      </div>
+    </div>
+    <div class="skill-card reveal">
+      <div class="skill-card-header"><div class="skill-icon">🔐</div><div class="skill-name">MANAGEMENT</div></div>
+      <div class="skill-items">
+        <span class="skill-tag green">LuckPerms</span>
+        <span class="skill-tag green">CMI</span>
+        <span class="skill-tag green">AuthMe</span>
+        <span class="skill-tag green">WorldGuard</span>
+        <span class="skill-tag green">FastAsyncWorldEdit</span>
+        <span class="skill-tag green">Multiverse-Core</span>
+        <span class="skill-tag green">ProtocolLib</span>
+        <span class="skill-tag green">PlaceholderAPI</span>
+      </div>
+    </div>
+    <div class="skill-card reveal">
+      <div class="skill-card-header"><div class="skill-icon">⭐</div><div class="skill-name">PREMIUM PLUGINS</div></div>
+      <div class="skill-items">
+        <span class="skill-tag yellow">BattlePass</span>
+        <span class="skill-tag yellow">AdvancedCrates</span>
+        <span class="skill-tag yellow">MythicalRaces</span>
+        <span class="skill-tag yellow">UltimateRewards</span>
+        <span class="skill-tag yellow">ajLeaderboards</span>
+        <span class="skill-tag yellow">SpawnerMeta</span>
+        <span class="skill-tag yellow">MRPremiumAddons</span>
+        <span class="skill-tag yellow">TAB</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PLUGIN LIST -->
+<div id="plugins" class="plugin-section" style="background:var(--dark);">
+  <div style="max-width:1100px;margin:0 auto;padding:0 32px 40px;">
+    <div class="section-header reveal">
+      <div class="section-eyebrow">Full Plugin List</div>
+      <h2 class="section-title">Semua <span style="color:var(--pink)">Plugin</span></h2>
+      <div class="section-line" style="background:linear-gradient(90deg,var(--pink),transparent);"></div>
+      <p style="color:var(--textdim);font-size:12px;margin-top:12px;">
+        <span style="color:var(--green)">■</span> Free/Default &nbsp;
+        <span style="color:var(--yellow)">■</span> Premium &nbsp;
+        <span style="color:var(--pink)">■</span> Custom / Exclusive
+      </p>
+    </div>
+  </div>
+  <div class="plugin-grid">
+    <!-- A -->
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>AdvancedCrates</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>AdvancedEnchantments</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>AdvancedServerList</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>ajLeaderboards</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>AuctionHouse</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>AuraSkills</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>AuthMe</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>AutoTreeChop</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>AxAFKZone</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>AxAPI</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>AxGraves</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>AxPlayerWarps</div>
+    <!-- B -->
+    <div class="plugin-item reveal"><span class="pi">■</span>BankPlus</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>BattlePass</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>BetterRTP</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>BountyHunters</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>bStats</div>
+    <!-- C -->
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>Citizens</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>Clans</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>CMI</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>CMILib</div>
+    <!-- D -->
+    <div class="plugin-item reveal"><span class="pi">■</span>DecentHolograms</div>
+    <!-- E -->
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>EcoEnchants</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>EconomyShopGUI</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>EntitySize</div>
+    <!-- F -->
+    <div class="plugin-item reveal"><span class="pi">■</span>FastAsyncWorldEdit</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>faststats</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>floodgate</div>
+    <!-- G -->
+    <div class="plugin-item reveal"><span class="pi">■</span>Geyser-Spigot</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>GUIPlus</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>Guilds</div>
+    <!-- I -->
+    <div class="plugin-item reveal"><span class="pi">■</span>InvSeePlusPlus</div>
+    <!-- J -->
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>Jobs</div>
+    <!-- L -->
+    <div class="plugin-item reveal"><span class="pi">■</span>LagFixer</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>Lands</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>LevelledMobs</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>LibsDisguises</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>LiteFish</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>LPC-Pro</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>LuckPerms</div>
+    <!-- M -->
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>MRPremiumAddons</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>Multiverse-Core</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>MyPet</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>MythicalRaces</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>MythicDungeons</div>
+    <!-- N -->
+    <div class="plugin-item reveal"><span class="pi">■</span>nightcore</div>
+    <!-- O -->
+    <div class="plugin-item custom reveal"><span class="pi">★</span>Ouranos (Custom)</div>
+    <!-- P -->
+    <div class="plugin-item reveal"><span class="pi">■</span>PlaceholderAPI</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>PlayerCurrency</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>ProtocolLib</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>PvPManager</div>
+    <!-- Q -->
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>QuickShop-Hikari</div>
+    <!-- S -->
+    <div class="plugin-item reveal"><span class="pi">■</span>SkinsRestorer</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>ShopGUIPlus</div>
+    <div class="plugin-item custom reveal"><span class="pi">★</span>Solo Leveling Rank</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>spark</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>SpawnerMeta</div>
+    <!-- T -->
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>TAB</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>TextOverPlayer</div>
+    <!-- U -->
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>UltimateRewards</div>
+    <!-- V -->
+    <div class="plugin-item reveal"><span class="pi">■</span>Vault</div>
+    <div class="plugin-item custom reveal"><span class="pi">★</span>Vegas (Custom)</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>ViaBackwards</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>ViaRewind</div>
+    <div class="plugin-item reveal"><span class="pi">■</span>ViaVersion</div>
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>Vulcan</div>
+    <!-- W -->
+    <div class="plugin-item premium reveal"><span class="pi">◆</span>WorldGuard</div>
+    <!-- CUSTOM -->
+    <div class="plugin-item custom reveal"><span class="pi">★</span>Custom Generator</div>
+    <div class="plugin-item custom reveal"><span class="pi">★</span>Custom Model Rank</div>
+    <div class="plugin-item custom reveal"><span class="pi">★</span>Senjata Legendary</div>
+    <div class="plugin-item custom reveal"><span class="pi">★</span>Custom Item Pack</div>
+    <div class="plugin-item custom reveal"><span class="pi">★</span>Wellsetups Ranks</div>
+  </div>
+</div>
+
+<!-- PROJECTS -->
+<section id="projects" style="padding:80px 0;border-bottom:1px solid var(--border);">
+  <div class="section" style="padding-top:0;padding-bottom:0;">
+    <div class="section-header reveal">
+      <div class="section-eyebrow">Showcase</div>
+      <h2 class="section-title">Server <span style="color:var(--cyan)">Projects</span></h2>
+      <div class="section-line" style="background:linear-gradient(90deg,var(--cyan),transparent);"></div>
+    </div>
+    <div class="projects-grid">
+      <div class="proj-card reveal">
+        <div class="proj-thumb">
+          <div class="proj-thumb-pattern"></div>
+          <div class="proj-thumb-icon">💀</div>
+          <span class="proj-lang">KILL SMP</span>
+        </div>
+        <div class="proj-body">
+          <div class="proj-title">Kill SMP Server</div>
+          <p class="proj-desc">Server Kill SMP lengkap dengan sistem PvP, bounty, dungeon custom, rank visual Solo Leveling, dan ekonomi terintegrasi. Support Bedrock + Java.</p>
+          <div class="proj-footer">
+            <div class="proj-tags">
+              <span class="proj-tag">PvPManager</span><span class="proj-tag">Geyser</span><span class="proj-tag">MythicDungeons</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="proj-card reveal">
+        <div class="proj-thumb">
+          <div class="proj-thumb-pattern"></div>
+          <div class="proj-thumb-icon">🏆</div>
+          <span class="proj-lang" style="background:rgba(255,204,0,.1);border-color:rgba(255,204,0,.3);color:var(--yellow);">RANK</span>
+        </div>
+        <div class="proj-body">
+          <div class="proj-title">Custom Model Rank System</div>
+          <p class="proj-desc">Sistem rank visual dengan custom 3D model terinspirasi Solo Leveling. Setiap rank punya model unik yang muncul di atas kepala player.</p>
+          <div class="proj-footer">
+            <div class="proj-tags">
+              <span class="proj-tag">LuckPerms</span><span class="proj-tag">TAB</span><span class="proj-tag">Custom Model</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="proj-card reveal">
+        <div class="proj-thumb">
+          <div class="proj-thumb-pattern"></div>
+          <div class="proj-thumb-icon">🏰</div>
+          <span class="proj-lang" style="background:rgba(255,0,119,.1);border-color:rgba(255,0,119,.3);color:var(--pink);">DUNGEON</span>
+        </div>
+        <div class="proj-body">
+          <div class="proj-title">Custom Dungeon System</div>
+          <p class="proj-desc">Dungeon boss fight dengan MythicDungeons, mob custom menggunakan MythicalRaces, drop senjata legendary, dan reward system dengan UltimateRewards.</p>
+          <div class="proj-footer">
+            <div class="proj-tags">
+              <span class="proj-tag">MythicDungeons</span><span class="proj-tag">MythicalRaces</span><span class="proj-tag">AuraSkills</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<div id="contact">
+  <div class="contact-inner">
+    <div class="reveal">
+      <div class="section-header">
+        <div class="section-eyebrow">Reach Out</div>
+        <h2 class="section-title" id="contact-title">Tertarik? <span style="color:var(--green)">Hubungi!</span></h2>
+        <div class="section-line"></div>
+      </div>
+      <p style="color:var(--textdim);font-size:13px;line-height:1.8;margin-bottom:28px;" id="contact-desc">
+        Butuh setup server Minecraft, konfigurasi plugin, atau custom content? Langsung hubungi saya via WhatsApp — respon cepat!
+      </p>
+      <div class="contact-links">
+        <a href="https://wa.me/62895378259160" target="_blank" class="contact-link" style="border-color:rgba(37,211,102,.3);">
+          <span class="contact-icon">📱</span>
+          <div>
+            <div style="color:var(--green);font-weight:bold;margin-bottom:2px;">WhatsApp</div>
+            <div style="font-size:11px;color:var(--textdim);">0895378259160</div>
+          </div>
+          <span style="margin-left:auto;font-size:10px;color:var(--green);letter-spacing:1px;">CHAT NOW →</span>
+        </a>
+      </div>
+      <div class="contact-note" style="margin-top:20px;">
+        <strong>💬 Bisa konsultasi untuk:</strong><br>
+        ✓ Setup server dari awal (Kill SMP / Survival / RPG)<br>
+        ✓ Instalasi & konfigurasi plugin premium<br>
+        ✓ Custom dungeon, item, dan model rank<br>
+        ✓ Integrasi Geyser/Floodgate (Bedrock support)<br>
+        ✓ Optimasi performa server
+      </div>
+    </div>
+    <div class="reveal">
+      <div class="section-header" style="margin-bottom:24px;">
+        <div class="section-eyebrow">Server Info</div>
+        <h3 style="font-family:var(--font-orb);font-size:20px;color:var(--white);">Status Server</h3>
+      </div>
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot td-r"></div><div class="terminal-dot td-y"></div><div class="terminal-dot td-g"></div>
+          <span class="terminal-title">kill-smp — status</span>
+        </div>
+        <div class="terminal-body">
+          <div><span class="cmd">$ plugins --count</span></div>
+          <div><span class="ok">✓ 60+ plugins loaded</span></div>
+          <div><span class="cmd">$ check bedrock-support</span></div>
+          <div><span class="ok">✓ Geyser + Floodgate active</span></div>
+          <div><span class="cmd">$ check economy</span></div>
+          <div><span class="ok">✓ EconomyShopGUI + Jobs + Vault</span></div>
+          <div><span class="cmd">$ check pvp</span></div>
+          <div><span class="ok">✓ PvPManager + Vulcan + Bounty</span></div>
+          <div><span class="cmd">$ check rank-system</span></div>
+          <div><span class="ok">✓ Solo Leveling Rank Pack loaded</span></div>
+          <div><span class="cmd">$ contact vhan-dev<span class="blink">_</span></span></div>
+          <div><span class="hi"> wa.me/62895378259160</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">[<span>VHAN</span>_DEV] v3.0</div>
+  <div class="footer-copy">© 2026 Vhan Dev — Minecraft Server Specialist</div>
+  <div class="footer-brand" style="color:var(--textdim)">Kill SMP</div>
+</footer>
+
+<script>
+const strings={
+  en:{
+    heroDesc:"Specialist in setting up <em>Kill SMP, Survival, and RPG</em> Minecraft servers. Experienced in configuring premium plugins, custom models, dungeons, and advanced rank systems.",
+    btnWork:"VIEW PLUGINS",btnContact:"CONTACT",
+    contactTitle:'Interested? <span style="color:var(--green)">Contact Me!</span>',
+    contactDesc:"Need Minecraft server setup, plugin configuration, or custom content? Contact me via WhatsApp — fast response!"
+  },
+  id:{
+    heroDesc:"Spesialis setup server Minecraft <em>Kill SMP, Survival, dan RPG</em>. Berpengalaman konfigurasi plugin premium, custom model, dungeon, dan sistem rank tingkat lanjut.",
+    btnWork:"LIHAT PLUGIN",btnContact:"HUBUNGI",
+    contactTitle:'Tertarik? <span style="color:var(--green)">Hubungi!</span>',
+    contactDesc:"Butuh setup server Minecraft, konfigurasi plugin, atau custom content? Langsung hubungi saya via WhatsApp — respon cepat!"
+  }
+};
+let currentLang='id';
+
+function selectLang(btn,lang){
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  currentLang=lang;
+}
+
+function applyLang(lang){
+  const s=strings[lang];
+  document.getElementById('hero-desc').innerHTML=s.heroDesc;
+  document.getElementById('btn-work').textContent=s.btnWork;
+  document.getElementById('btn-contact').textContent=s.btnContact;
+  document.getElementById('contact-title').innerHTML=s.contactTitle;
+  document.getElementById('contact-desc').textContent=s.contactDesc;
+  document.getElementById('boot-label').textContent=lang==='id'?'MEMUAT SISTEM...':'LOADING SYSTEM...';
+}
+
+function confirmLang(){
+  document.getElementById('lang-overlay').style.opacity='0';
+  setTimeout(()=>{
+    document.getElementById('lang-overlay').style.display='none';
+    applyLang(currentLang);
+    startBoot();
+  },400);
+}
+
+const bootEN=['Initializing VHAN Server System...','Loading plugin registry.............. [OK]','Checking Geyser-Floodgate bridge....... [OK]','Loading economy modules................ [OK]','Starting dungeon engine................ [OK]','Loading rank & custom models........... [OK]','Kill SMP — System ready!'];
+const bootID=['Inisialisasi Sistem VHAN Server...','Memuat registri plugin................. [OK]','Memeriksa Geyser-Floodgate bridge...... [OK]','Memuat modul ekonomi................... [OK]','Menjalankan dungeon engine............. [OK]','Memuat rank & custom model............. [OK]','Kill SMP — Sistem siap!'];
+
+function startBoot(){
+  const lines=currentLang==='id'?bootID:bootEN;
+  const container=document.getElementById('boot-lines');
+  const bar=document.getElementById('boot-bar');
+  const pct=document.getElementById('boot-pct');
+  container.innerHTML='';
+  let i=0;
+  function showLine(){
+    if(i>=lines.length){
+      bar.style.width='100%';pct.textContent='100%';
+      setTimeout(()=>{
+        const bs=document.getElementById('boot-screen');
+        bs.style.opacity='0';
+        setTimeout(()=>{bs.style.display='none';revealElements();},700);
+      },600);
+      return;
+    }
+    const div=document.createElement('div');
+    div.className='boot-line';
+    const isOk=lines[i].includes('[OK]');
+    const raw=lines[i].replace('[OK]','');
+    div.innerHTML=isOk?raw+'<span style="color:var(--green)">[OK]</span>':'<span style="color:var(--cyan)">'+lines[i]+'</span>';
+    container.appendChild(div);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>div.classList.add('show')));
+    const p=Math.round(((i+1)/lines.length)*100);
+    bar.style.width=p+'%';pct.textContent=p+'%';
+    i++;
+    setTimeout(showLine,220+Math.random()*160);
+  }
+  showLine();
+}
+
+function revealElements(){
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');}});
+  },{threshold:.08,rootMargin:'0px 0px -30px 0px'});
+  document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+}
+</script>
+</body>
+</html>
